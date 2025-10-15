@@ -1,4 +1,45 @@
-alt-srv
+**alt-srv**
+```tcl
+mkdir /etc/net/ifaces/ens192
+mkdir /etc/net/ifaces/ens224
+mkdir /etc/net/ifaces/ens256
+vim /etc/net/ifaces/ens192/options
+    BOOTPROTO=dhcp
+    TYPE=eth
+vim /etc/net/ifaces/ens224/options
+    BOOTPROTO=static
+    CONFIG_IPV4=yes
+    DISABLED=no
+    TYPE=eth
+cp /etc/net/ifaces/ens224/options /etc/net/ifaces/ens256/options
+vim /etc/net/ifaces/ens224/ipv4address
+    192.168.1.10/24
+vim /etc/net/ifaces/ens256/ipv4address
+    192.168.2.10/24
+vim /etc/net/sysctl.conf
+    net.ipv4.forward=1
+systemctl restart network
+apt-get update && apt-get install iptables
+iptables -t nat -A POSTROUTING -o ens192 -s 0/0 -j MASQUERDE
+iptables-save > /etc/sysconfig/iptables
+```
+**win-srv**
+>[ip address: 192.168.1.1]
+>[mask: 255.255.255.0]
+>[gateway: 192.168.1.10]
+>[dns1: 8.8.8.8]
+>[dns2: 1.1.1.1]
+###Выключить firewall(брандмауэр) в панели управления.
+**CLI**
+>[ip address: 192.168.2.1]
+>[mask: 255.255.255.0]
+>[gateway: 192.168.2.10]
+>[dns1: 8.8.8.8]
+>[dns2: 1.1.1.1]
+###Выключить firewall(брандмауэр) в панели управления.
+
+**alt-srv**
+
 ```tcl
 apt-get install nginx php8.2-fpm-fcgi
 systemctl start nginx php8.2-fpm
@@ -101,7 +142,7 @@ systemctl stop httpd2.service
 systemctl disable httpd2.service
 
 ```
->[Проверка:
->nginx -t
->curl http://localhost
->На cli рткрыть edge и перейти по адрессу http://192.168.1.10]
+>[Проверка:]
+>[nginx -t]
+>[curl http://localhost]
+>[На cli рткрыть edge и перейти по адрессу http://192.168.1.10]
