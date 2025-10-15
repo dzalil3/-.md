@@ -20,7 +20,7 @@ vim /etc/net/sysctl.conf
     net.ipv4.forward=1
 systemctl restart network
 apt-get update && apt-get install iptables
-iptables -t nat -A POSTROUTING -o ens192 -s 0/0 -j MASQUERDE
+iptables -t nat -A POSTROUTING -o ens192 -s 0/0 -j MASQUERADE
 iptables-save > /etc/sysconfig/iptables
 ```
 **win-srv**
