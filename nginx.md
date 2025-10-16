@@ -142,7 +142,4 @@ systemctl stop httpd2.service
 systemctl disable httpd2.service
 
 ```
->[Проверка:]
->[nginx -t]
->[curl http://localhost]
->[На cli рткрыть edge и перейти по адрессу http://192.168.1.10]
+>[Проверка: nginx -t,curl http://localhost. На cli рткрыть edge и перейти по адрессу http://192.168.1.10]
