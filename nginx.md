@@ -143,3 +143,133 @@ systemctl disable httpd2.service
 
 ```
 >[Проверка: nginx -t,curl http://localhost. На cli рткрыть edge и перейти по адрессу http://192.168.1.10]
+
+**АЛЬТЕРНАТИВА**
+
+**alt-srv**
+```tcl
+iptables -t nat -A POSTROUTING -o ens192 -s 0/0 -j MASQUERADE
+iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+iptables -I INPUT -p tcp --dport 8000 -j ACCEPT
+iptables-save > /etc/sysconfig/iptables
+systemctl enable --now iptables
+```
+```tcl
+apt-get install nginx php8.2-fpm-fcgi
+vim /etc/nginx/nginx.conf
+```
+###Удалить всё содержимое и вставить следующий кнфиг:
+```tcl
+user nobody;
+worker_processes auto;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    proxy_temp_path /var/spool/nginx/tmp/proxy;
+    fastcgi_temp_path /var/spool/nginx/tmp/fastcgi;
+    client_body_temp_path /var/spool/nginx/tmp/client;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+    gzip on;
+    gzip_types text/plain text/css text/xml application/x-javascript application/atom+xml;
+
+    server {
+        listen 80;
+        server_name localhost;
+        root /var/www/html;
+        index index.php index.html;
+
+        location / {
+            try_files $uri $uri/ =404;
+            allow all;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/var/run/php8.2-fpm/php8.2-fpm.sock;
+            fastcgi_index index.php;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include fastcgi_params;
+            allow all;
+        }
+    }
+}
+```
+```tcl
+vim /var/www/html/create.php
+```
+```tcl
+<?php
+$file = 'tickets.txt';
+
+if ($_POST['subject']) {
+    $ticket = [
+        'id' => time(),
+        'subject' => $_POST['subject'],
+        'author' => $_POST['author'],
+        'status' => 'Новая',
+        'date' => date('d.m.Y H:i'),
+        'description' => $_POST['description']
+    ];
+    
+    file_put_contents($file, json_encode($ticket)."\n", FILE_APPEND);
+    echo "Заявка создана!";
+}
+?>
+<!DOCTYPE html>
+<html>
+<head><title>Создание заявки</title></head>
+<body>
+    <h1>Создание заявки</h1>
+    <form method="post">
+        <input type="text" name="author" placeholder="Ваше имя" required><br>
+        <input type="text" name="subject" placeholder="Тема заявки" required><br>
+        <textarea name="description" placeholder="Описание" required></textarea><br>
+        <button type="submit">Создать</button>
+    </form>
+</body>
+</html>
+```
+```tcl
+vim /var/www/html/view.php
+```
+```tcl
+<?php
+$file = 'tickets.txt';
+?>
+<!DOCTYPE html>
+<html>
+<head><title>Просмотр заявок</title></head>
+<body>
+    <h1>Все заявки</h1>
+    <?php
+    if (file_exists($file)) {
+        $tickets = file($file);
+        foreach (array_reverse($tickets) as $line) {
+            $ticket = json_decode($line, true);
+            echo "<div style='border:1px solid #ccc; margin:10px; padding:10px;'>";
+            echo "<strong>Заявка #{$ticket['id']}</strong><br>";
+            echo "<strong>Тема:</strong> {$ticket['subject']}<br>";
+            echo "<strong>Автор:</strong> {$ticket['author']}<br>";
+            echo "<strong>Статус:</strong> {$ticket['status']}<br>";
+            echo "<strong>Дата:</strong> {$ticket['date']}<br>";
+            echo "<strong>Описание:</strong> {$ticket['description']}<br>";
+            echo "</div>";
+        }
+    } else {
+        echo "<p>Заявок нет</p>";
+    }
+    ?>
+</body>
+</html>
+```
+```tcl
+chown -R nobody:nobody /var/www/html/
+chmod 755 /var/www/html/
+chmod 644 /var/www/html/*.php
+chmod 666 /var/www/html/tickets.txt
+```
+
